@@ -1,0 +1,311 @@
+﻿<style type="text/css">
+    .btnplus {
+        padding: 0.45em;
+        margin-left: 0.2em;
+    }
+    #Grid_viajecanton .k-grid-content table tbody tr td:nth-child(1) {
+        padding-left: 1px !important;
+    }
+
+    #Grid_viajecanton .k-grid-header table thead tr:nth-child(1) th:nth-child(1) > span > span {
+        padding: 0 0 0 2px;
+    }
+</style>
+
+<label class="bold">Destinos:</label>
+<div id="Grid_viajecanton"></div>
+
+<script id="template_DDL_TreeCanton" type="text/kendo-ui-template">
+    # if (item.departamento) { #
+        <a class='k-icon k-i-group' href='\#'></a>
+    # } #
+    # if (item.municipio) { #
+            <a class='k-icon k-i-ungroup' href='\#'></a>
+    # } #
+    # if (item.canton) { #
+        <a class='k-icon k-i-map-marker-target' href='\#'></a>
+    # } #
+
+    <span class="#: !item.isSelected ? 'k-disabled': ''#">
+        #: item.text #
+    </span> 
+</script>
+
+<script id="template_viajecanton" type="text/x-kendo-template">
+    <div class="row w-100 position-absolute">
+        <div class="col-10 w-100 pr-0 mr-0">
+            <input id="DDL_TreeCanton" class="w-100"  />
+        </div>
+        <div class="col pl-1 mr-0 pr-0">
+            <button type="button" class="btn btn-sm k-button k-button-solid k-button-solid-base btnplus" onclick="fn_agregarViajeCanton(false);">
+                <span class="k-icon k-i-plus k-button-icon"></span>
+            </button>
+        </div>
+    </div>
+</script>
+
+<script type="text/javascript">
+    //Agregar btn cantones al grid
+    function fn_agregarViajeCanton(NoEventSelected, muni) {
+        var ddltreecantones = $("#DDL_TreeCanton").data("kendoDropDownTree");
+        var datos = [];
+        var gridDS = $("#Grid_viajecanton").data("kendoGrid").dataSource;
+        var gridDSdata = gridDS.data();
+        var datorepetido = false;
+
+        if (NoEventSelected) {
+            for (var i = cantonesData.length; i--;) {
+                if (cantonesData[i]["cdmc"] === muni) {
+                    DDL_TreeCanton_data["data"] = cantonesData[i];
+                    break;
+                }
+            }
+        }
+
+        if (ddltreecantones.value() !== "" && typeof DDL_TreeCanton_data["canton"] !== "undefined") {
+            //Verificando que no hayan datos repetidos
+            for(var i = gridDSdata.length; i--;){
+                if (gridDSdata[i]["id"] === DDL_TreeCanton_data["id"]) {
+                    datorepetido = true;
+                    break;
+                }
+            }
+            
+            if (!datorepetido) {
+                datos = DDL_TreeCanton_data["data"];
+                gridDS.add({ 
+                    id: datos["cdmc"],
+                    canton: datos["canton"],
+                    municipio: datos["mpio"],
+                    departamento: datos["dpto"]
+                });
+                ddltreecantones.value("");
+            } else {
+                Swal.fire('AVISO!', 'No se puede incluir un destino repetido', 'warning');
+            }
+        }
+    }
+    function fn_eliminarViajeCantonSINO(obj, idGrid) {
+        var grid = $("#" + idGrid).data("kendoGrid");
+        var row = $(obj).closest("tr");
+        var dataItem = grid.dataItem(row);
+
+        Swal.fire({
+            title: 'AVISO',
+            html: "Está seguro que desea eliminar el destino <b>" + dataItem["canton"] + "</b>?",
+            icon: 'warning',
+            timer: 10000,
+            timerProgressBar: true,
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Sí, deseo eliminarlo!'
+        }).then((result) => { 
+            if (result.isConfirmed) {
+                grid.removeRow(row);
+            }
+        });       
+    }
+
+    function fn_eliminarTodosViajeCantonSINO(obj, idGrid) {
+        var grid = $("#" + idGrid).data("kendoGrid");
+        Swal.fire({
+            title: 'AVISO',
+            html: "Está seguro que desea eliminar el todos los destinos?",
+            icon: 'warning',
+            timer: 10000,
+            timerProgressBar: true,
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Sí, deseo eliminarlo!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                grid.dataSource.data([]);
+            }
+        });
+    }
+
+
+    //DDLTree Cantones
+    var DDL_TreeCanton_data = [];
+    var cantonesData = [];
+    function get_ddlTreeCantones() {
+        $.get(pathRequest + "adSolicitarViaje/ObtenerCantones", {}, function (d) {
+            cantonesData = d;
+            var T_d1 = [];
+            var d1 = _.groupByMulti(d, ["dpto", "mpio", "canton"]);
+            for (var a in d1) {
+                var d2 = d1[a];
+                var T_d2 = [];
+                var id1 = "";
+                for (var b in d2) {
+                    var d3 = d2[b];
+                    var T_d3 = [];
+                    var id2 = "";
+                    for (var c in d3) {
+                        T_d3.push({
+                            text: c, data: d3[c][0], id: d3[c][0]["cdmc"], isSelected: true, canton: true, municipio: false, departamento: false
+                        });
+                        id2 = d3[c][0]["cdmc"].substring(0, 4);
+                    }
+                    T_d2.push({
+                        text: b, items: T_d3, id: id2, isSelected: false, canton: false, municipio: true, departamento: false
+                    });
+                    id1 = id2.substring(0, 2);
+                }
+                T_d1.push({
+                    text: a, items: T_d2, id: id1, isSelected: false, canton: false, municipio: false, departamento: true
+                });
+            }
+
+            $("#DDL_TreeCanton").kendoDropDownTree({
+                template: kendo.template($("#template_DDL_TreeCanton").html()),
+                dataSource: T_d1,
+                checkboxes: false,
+                checkAll: false,
+                //checkAllTemplate: "<label>Todos</label>",
+                autoClose: true,
+                filter: "contains",
+                delay: 1000,
+                minLength: 3,
+                rounded: "solid",
+                dataTextField: "text",
+                dataValueField: "id",
+                height: 250,
+               // enforceMinLength: true,
+                autoWidth: true,
+                fillMode: "solid",
+                placeholder: "[Seleccione un Destino]",
+                tagMode: "single",
+                select: function(e){
+                    var datos = e.sender.dataItem(e.node);
+                    if (!datos.isSelected) {
+                        e.preventDefault();
+                    } else {
+                        DDL_TreeCanton_data = datos;
+                    }
+                }
+            });
+        });
+    }
+    get_ddlTreeCantones();
+
+    //Grid
+    var Grid_viajecanton_dataitem = [];
+    var record_Grid_viajecanton = 0;
+    function create_Grid_viajecanton(datos) {
+        $("[id='Grid_viajecanton']").html("");
+        $("[id='Grid_viajecanton']").kendoGrid({
+            mobile: "phone",
+            toolbar: [
+                { template: kendo.template($("[id='template_viajecanton']").html()) }
+            ],
+            dataSource: {
+                pageSize: 50,
+                schema: {
+                    model: {
+                        fields: {
+                            id: { type: "string" },
+                            canton: { type: "string" },
+                            municipio: { type: "string" },
+                            departamento: { type: "string" }
+                        }
+                    }
+                }
+            },
+            filterable: {
+                extra: false
+            },
+            filterable: false,
+            height: 260,
+            sortable: true,
+            groupable: false,
+            columnMenu: false,
+           // reorderable: true,
+            resizable: true,
+            scrollable: true,
+            pageable: {
+                allPages: true,
+                pageSizes: true,
+                previousNext: true,
+                input: false,
+                numeric: false,
+                refresh: false,
+                info: true
+            },
+            reorderable: {
+                rows: true
+            },
+            selectable: "single, row",
+            change: function (e) {
+                Grid_viajecanton_dataitem = e !== null ? e.sender.dataItem(e.sender.select()) : null;
+            },
+            dataBinding: function() {
+                record_Grid_viajecanton = (this.dataSource.page() - 1) * this.dataSource.pageSize();
+            },
+            dataBound: function () {
+                var data = [];
+                var grid = this;
+                var dataSource = grid.dataSource;
+                var allData = dataSource.data();
+                var filters = dataSource.filter();
+                var query = new kendo.data.Query(allData);
+                data = query.filter(filters).data;
+
+                $("[id='Grid_viajecanton'] .k-grid-content tbody tr:not(.k-grouping-row)").dblclick(function (e) {
+                    if (!$(e.target).is(":input")) {
+                        var ds = Grid_viajecanton_dataitem;
+
+                    }
+                });
+                for (var i = 1; i < this.columns.length; i++) {
+                    this.autoFitColumn(i);
+                }
+            },
+            columns:
+                [
+                    {
+                        template:
+                        `
+                            <button title="Eliminar registro" type="button" class="btn btn-sm k-button k-button-solid k-button-solid-base btnplus" onclick="fn_eliminarViajeCantonSINO(this, 'Grid_viajecanton');">
+                                <span class="k-icon k-i-minus-circle k-button-icon"></span>
+                            </button>
+                        `,
+                        //title: "&nbsp;",
+                        headerTemplate:
+                            `
+                            <button title="Eliminar todos los registros" type="button" class="btn btn-sm k-button k-button-solid k-button-solid-base btnplus" onclick="fn_eliminarTodosViajeCantonSINO(this, 'Grid_viajecanton');">
+                                <span class="k-icon k-i-minus-circle k-button-icon"></span>
+                            </button>
+                        `,
+                        width: "40px",
+                        sticky: true
+                    },
+                    {
+                        title: "Orden",
+                        template: "#= ++record_Grid_viajecanton #",
+                        sticky: true
+                    },
+                    {
+                        field: "id",
+                        title: "<b>Código</b>"
+                    },
+                    {
+                        field: "canton",
+                        title: "<b>Cantón</b>"
+                    },
+                    {
+                        field: "municipio",
+                        title: "<b>Municipio</b>"
+                    },
+                    {
+                        field: "departamento",
+                        title: "<b>Departamento</b>"
+                    }
+                ]
+        });
+        $("[id='Grid_viajecanton']").data("kendoGrid").dataSource.data(datos);
+    }
+    create_Grid_viajecanton([]);    
+</script>

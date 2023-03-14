@@ -1,0 +1,858 @@
+﻿@{
+    Layout = null;
+}
+@{
+    IEnumerable<LoginModel> logindeign = ViewData["datausuario"] as IEnumerable<LoginModel>;
+    int? rolid = null;
+    if (logindeign != null)
+    {
+        rolid = logindeign.ToList()[0].rolid;
+    }
+    rolid = (rolid == null ? -1 : rolid);
+}
+<style type="text/css">
+    .k-toolbar.k-grid-toolbar {
+        width: 100% !important;
+    }
+    .k-detail-row td.k-hierarchy-cell {
+        display: none;
+    }
+    label {
+        margin-bottom: 0rem;
+    }
+
+
+    /* CLICK DERECHO MENU */
+    #contextMenu {
+        position: absolute;
+        display: block;
+        top: 0px;
+    }
+
+    .ctx-container {
+        position: absolute;
+        z-index: 200;
+        font-size: 14px;
+    }
+
+    .ctx-menu {
+        display: flex;
+        flex-direction: column;
+        background-color: var(--color-bg-secondary);
+        border-radius: 10px;
+        box-shadow: 0 10px 20px rgb(64 64 64 / 15%);
+    }
+
+    .ctx-menu-list {
+        margin: 0;
+        display: block;
+        width: 100%;
+        padding: 8px;
+        font-weight: 500;
+    }
+
+    .ctx-menu-item {
+        position: relative;
+        list-style-type: none;
+    }
+
+    .ctx-menu-button {
+        font: inherit;
+        border: 0;
+        padding: 5px 5px;
+        padding-right: 36px;
+        width: 100%;
+        border-radius: 8px;
+        text-align: left;
+        display: flex;
+        align-items: center;
+        position: relative;
+        background-color: var(--color-bg-secondary);
+    }
+
+        .ctx-menu-button i {
+            flex-shrink: 0;
+            width: 20px;
+            height: 20px;
+            margin-right: 2px;
+            margin-left: 4px;
+            color: var(--color-text-primary-offset);
+        }
+
+        .ctx-menu-button:hover {
+            background-color: var(--color-bg-primary-offset);
+        }
+
+        .btn-danger {
+            background-color: var(--color-red);
+        }
+
+    :root {
+        --color-bg-primary: #d0d6df;
+        --color-bg-primary-offset: #f1f3f7;
+        --color-bg-secondary: #fff;
+        --color-text-primary: #3a3c42;
+        --color-text-primary-offset: #898c94;
+        --color-orange: #dc9960;
+        --color-green: #1eb8b1;
+        --color-purple: #657cc4;
+        --color-black: var(--color-text-primary);
+        --color-red: #d92027;
+    }
+
+    :root {
+        --blue: #007bff;
+        --indigo: #6610f2;
+        --purple: #6f42c1;
+        --pink: #e83e8c;
+        --red: #dc3545;
+        --orange: #fd7e14;
+        --yellow: #ffc107;
+        --green: #28a745;
+        --teal: #20c997;
+        --cyan: #17a2b8;
+        --white: #fff;
+        --gray: #6c757d;
+        --gray-dark: #343a40;
+        --primary: #007bff;
+        --secondary: #6c757d;
+        --success: #28a745;
+        --info: #17a2b8;
+        --warning: #ffc107;
+        --danger: #dc3545;
+        --light: #f8f9fa;
+        --dark: #343a40;
+        --breakpoint-xs: 0;
+        --breakpoint-sm: 576px;
+        --breakpoint-md: 768px;
+        --breakpoint-lg: 992px;
+        --breakpoint-xl: 1200px;
+        --font-family-sans-serif: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans",sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji";
+        --font-family-monospace: SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
+    }
+</style>
+
+@*<ul id="contextMenu" class="dropdown-menu" role="menu" style="display: none;">
+    <li onclick="cancelar();"><a tabindex="-1" href="#">Cancelar Viaje</a></li>
+    <li onclick="asignar();"><a tabindex="-1" href="#">Asignar Viaje</a></li>
+    <li onclick="reasignar();"><a tabindex="-1" href="#">Reasignar Viaje</a></li>
+    <li onclick="modificar();"><a tabindex="-1" href="#">Modificar</a></li>
+    <li onclick="verDetalle();"><a tabindex="-1" href="#">Ver Detalle de Viaje</a></li>
+</ul>*@
+
+<div id="contextMenu" class="ctx-container" style="display:none;">
+    <div class="ctx-menu">
+        <ul class="ctx-menu-list">
+            <li onclick="fn_CancelarModal();" class="ctx-menu-item"><button class="ctx-menu-button"><i class="zmdi sms-west2"></i>Cancelar Viaje</button></li>
+            <li onclick="fn_Asignar(); $('.eventos').hide(); $('#btn_Asignar').show(); $('#btn_Resignar, #btn_AsigModificar').hide(); $('#mobilemotorista').data('kendoDropDownList').value('');" class="ctx-menu-item"><button class="ctx-menu-button"><i class="zmdi sms-waze"></i>Asignar Viaje</button></li>
+            <li onclick="fn_Asignar(); $('.eventos').show(); $('#btn_Resignar').show(); $('#btn_Asignar, #btn_AsigModificar').hide(); $('#ReasigObservaciones').val(''); $('#mobilemotorista').data('kendoDropDownList').value(Grid_viajeSolicitado_dataitem.mobileid);" class="ctx-menu-item"><button class="ctx-menu-button"><i class="zmdi sms-waze"></i>Reasignar Viaje</button></li>
+            <li onclick="fn_modificar(); $('#btn_modificar').show(); $('#btn_modificar').show(); $('#btn_guardar').hide();" class="ctx-menu-item"><button class="ctx-menu-button"><i class="k-icon k-i-pencil"></i>Modificar</button></li>
+            <li onclick="fn_Asignar(); $('.eventos').hide(); $('#btn_AsigModificar').show(); $('#btn_Asignar, #btn_Resignar').hide(); $('#mobilemotorista').data('kendoDropDownList').value(Grid_viajeSolicitado_dataitem.mobileid);" class="ctx-menu-item"><button class="ctx-menu-button"><i class="k-icon k-i-pencil"></i>Modificar</button></li> @* Es el modificar del asignador *@
+        </ul>
+    </div>
+</div>
+
+<div class="card w-100 h-100">
+    <div class="card-header">
+        <h5 class="card-title">
+            @{ if (rolid == 1) { <text> Solicitudes de viajes </text> } else { <text> Asignaciones de viajes </text> } }
+        </h5>
+        <ul class="nav nav-tabs card-header-tabs" data-bs-tabs="tabs">
+            <li class="nav-item">
+                <a class="nav-link active" aria-current="true" data-bs-toggle="tab" href="#tab1">Configuración</a>
+            </li>
+        </ul>
+    </div>
+    <div class="card-body tab-content">
+        <div class="tab-pane active" id="tab1">
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="row">
+                        <div class="col-6">
+                            <label style="display: inline-block;">Inicio</label>
+                            <input id="fecha_inirp" class="form-control font9" title="Fecha" placeholder="____/__/__ __:__" />
+                        </div>
+                        <div class="col-6">
+                            <label style="display: inline-block;">Fin</label>
+                            <input id="fecha_finrp" class="form-control font9" title="Fecha" placeholder="____/__/__ __:__" />
+                        </div>
+                    </div>
+                    <div class="row mt-1">
+                        <div style="text-align:right;" class="col-12 mt-2 mb-4">
+                            <button type="button" class="btn btn-sm btn-primary w-100" onclick="get_Grid_viajeSolicitado();">Generar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row ">
+                <div class="col-12">
+                    @*<button type="button" id="btn_agrgarDelictivos" class="btn btn-primary w-100" onclick="Ingresar_DDLEventoZonaDelictiva();">Agregar</button>*@
+                    <div id="Grid_viajeSolicitado"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script id="template_viajeSolicitado" type="text/x-kendo-template">
+    <div class="row w-100 position-absolute" @{ if (rolid == 2) { <text> style="width: 96% !important;" </text>} }>
+        <div class="@{ if (rolid == 1) { <text> col-10 </text> } else { <text>col-12 </text>}} w-100 pr-0 mr-0">
+            <span class="k-searchbox k-input k-input-md k-rounded-md k-input-solid k-grid-search w-100">
+                <span class="k-input-icon k-icon k-i-search"></span><input autocomplete="off" placeholder="Buscar..." title="Search..." class="k-input-inner" />
+            </span>
+        </div>
+        @{
+            if (rolid == 1)
+            {
+                <text>
+                    <div class="col pl-1 mr-0 pr-0">
+                        <button type="button" class="btn btn-sm k-button k-button-solid k-button-solid-base btnplus" onclick="fn_openModalAgregarViaje();">
+                            <span class="k-icon k-i-plus k-button-icon"></span>
+                        </button>
+                    </div>
+                </text>
+            }
+        }
+        
+    </div>    
+</script>
+<script type="text/x-kendo-template" id="template_Detail_Grid_viajeSolicitado">
+    <div class="detailTabstrip">
+        <ul>
+            <li><b>Brigada</b>
+            </li>
+            <li class="k-state-active"><b>Destinos</b>
+            </li>
+        </ul>
+        <div>
+            <div class="dt_brigada"></div>
+        </div>
+         <div>
+            <div class="dt_viajedetalle"></div>
+        </div>
+    </div>
+</script>
+
+<script type="text/javascript">
+    var rolid = @Html.Raw(@rolid);
+    function changetextMenu() {
+        if (rolid === 2) {
+            $("#navbarSupportedContent li a").eq(0).text("Asignar Viaje");
+        }
+    }
+    changetextMenu();
+
+    function fn_Asignar() {
+        $('#modal_Asignarviaje').modal('show');
+    }
+
+    function fn_CancelarModal() {
+        $('#modal_cancelarviaje').modal('show');
+    }
+
+    function fn_modificar() {
+
+        clear_modalControls();
+
+        $('#modal_ingresarviaje').modal('show');
+
+        var d = Grid_viajeSolicitado_dataitem;
+
+        $("#modalTitulo").text("Modificar Viaje #" + d.bitacoraId);
+        $("#ddlSupervidor").data("kendoDropDownList").value(d.supervisorId);
+        set_PersonalDisponibles(d.brigada);
+        $("#fsalida").val(moment(d.fsalida).format("YYYY/MM/DD HH:mm"));
+        $("#fentrada").val(moment(d.fentrada).format("YYYY/MM/DD HH:mm"));
+
+        var municipios = d.municipios.split(","); @* En realidad debería de decir cantones pero en la base quedó con el campo municipio *@
+        
+        DDL_TreeCanton_data["canton"] = true;
+        for (var i = 0, len = municipios.length; i < len; i++) {
+            $("#DDL_TreeCanton").data("kendoDropDownTree").value(municipios[i]);
+            fn_agregarViajeCanton(true, municipios[i]);
+        }
+
+        $("#txtObservaciones").val(d.observacion);
+        $("#fsalida").val(moment(d.fsalida).format("YYYY/MM/DD HH:mm"));
+
+        pernoctarEval = d.pernoctara;
+
+        setTimeout(function () {
+            $("[id='Grid_viajecanton']").data("kendoGrid").refresh();
+        }, 500);
+    }
+
+    //Personal de Brigadas
+    //Se setea cuando le dan doble click al grid y manda los ids de las brigadas para estar seleccionadas
+    function set_PersonalDisponibles(strDataSelected) {
+       // strDataSelected = "3,4,5,6,7,8,9,10,1,2";
+        var dataSelected = strDataSelected.split(",");
+        var treeData = $("#ddlPersonalBrigada").data("kendoDropDownTree").dataSource.data();
+        for (var i = treeData.length; i--;) {
+            var encontrado = false;
+            loopj:
+            for (var j = dataSelected.length; j--;) {
+                if (parseInt(dataSelected[j]) === treeData[i]["id"]) {
+                    encontrado = true;
+                    break loopj;
+                }
+            }
+            treeData[i].set("checked", encontrado);
+        }
+    }
+
+    //Ocultar Menú de click derecho con click normal
+    function fn_ocultarContextMenu() {
+        setTimeout(function () {
+            window.addEventListener('click', function (e) {
+                $("#contextMenu").hide();
+            });
+        }, 1000);
+    }
+    fn_ocultarContextMenu();
+
+
+    function crearFechas() {
+        $('#fecha_inirp').bootstrapMaterialDatePicker({
+            format: 'YYYY/MM/DD HH:mm',
+            cancelText: 'Descartar',
+            clearText: 'Limpar',
+            lang: 'es-mx'
+        });
+
+        $('#fecha_finrp').bootstrapMaterialDatePicker({
+            format: 'YYYY/MM/DD HH:mm',
+            cancelText: 'Descartar',
+            clearText: 'Limpar',
+            lang: 'es-mx'
+        });
+
+        $('#fecha_inirp').val(moment().startOf("day").format("YYYY/MM/DD HH:mm"));
+        $('#fecha_finrp').val(moment().endOf("day").format("YYYY/MM/DD HH:mm"));
+        /*$("#fecha_inirp").kendoDateTimePicker({
+            value: moment().startOf('day')._d,
+            dateInput: true,
+            format: "yyyy/MM/dd HH:mm:ss"
+        });
+        $("#fecha_finrp").kendoDateTimePicker({
+            value: moment().endOf('day')._d,
+            dateInput: true,
+            format: "yyyy/MM/dd HH:mm:ss"
+        });*/
+    }
+    crearFechas();
+
+    //Grid *****
+    function get_Grid_viajeSolicitado() {
+        kendo.ui.progress($("[id='Grid_viajeSolicitado']"), true);
+        var arg = {
+           /*
+            companyid: $.main.companyid,
+            BD: $.main.BD,
+            userid: $.main.userid,
+           */
+            fechaini: moment($("#fecha_inirp").val()).format("YYYYMMDD HH:mm:ss"),
+            fechafin: moment($("#fecha_finrp").val()).format("YYYYMMDD HH:mm:ss")
+           
+        };
+
+        $.get(pathRequest + "adSolicitarViaje/getSolicitudes", arg, function (datos) {
+            var d = datos;
+            //Convirtiendo a tipo DateTime en js para que sepuedan hacer bien los filtros de lo contrario mostraria error
+            for (var i = 0, len = d.length; i < len; i++) {
+                d[i]["fsalida"] = moment(d[i]["fsalida"])._d;
+                d[i]["fentrada"] = moment(d[i]["fentrada"])._d;
+                d[i]["fcreacion"] = moment(d[i]["fcreacion"])._d;
+            }
+            create_Grid_viajeSolicitado(d);
+            if (!d.length) {
+                Swal.fire('No hay datos que mostrar!', '', 'warning')
+            }
+        }).always(function () {
+            kendo.ui.progress($("[id='Grid_viajeSolicitado']"), false);
+        });
+    }
+
+    var Grid_viajeSolicitado_dataitem = [];
+    function create_Grid_viajeSolicitado(datos) {
+        $("[id='Grid_viajeSolicitado']").html("");
+        $("[id='Grid_viajeSolicitado']").kendoGrid({
+            mobile: "phone",
+            //toolbar: ["excel", "pdf", "search"],
+            toolbar: [
+                { template: kendo.template($("[id='template_viajeSolicitado']").html()) }
+            ],
+            dataSource: {
+                pageSize: 50,
+                schema: {
+                    model: {
+                        fields: {
+                            bitacoraId: { type: "number" },
+                            mobileid: { type: "number" },
+                            placa: { type: "string" },
+                            mobileName: { type: "string" },
+                            motoristaid: { type: "number" },
+                            motorista: { type: "string" },
+                            fsalida: { type: "date" },                            
+                            fentrada: { type: "date" },
+                            kmSalida: { type: "number" },
+                            kmEntrada: { type: "number" },
+                            supervidorId: { type: "number" },
+                            supervisor: { type: "string" },
+                            reponsableId: { type: "number" },
+                            responsable: { type: "string" },
+                            pernoctara: { type: "boolean" },
+                            estadoId: { type: "number" },
+                            estado: { type: "string" },
+                            mobileidReasignado: { type: "number"},
+                            placaR: { type: "string" },
+                            mobileNameR: { type: "string" },
+                            motoristaidReasignado: {type: "number"},
+                            motoristaNameR: {type: "string"},
+                            observacion: { type: "string" },
+                            eventoId: { type: "number" },
+                            evento: {type: "string"},
+                            fcreacion: { type: "date" },
+                            brigada: { type: "string" }
+                        }
+                    }
+                }
+            },
+            filterable: {
+                extra: false
+            },
+            filterable: false,
+            height: 450,
+            sortable: true,
+            groupable: false,
+            columnMenu: false,
+            reorderable: true,
+            resizable: true,
+            scrollable: true,
+            pageable: {
+                allPages: true,
+                pageSizes: true,
+                previousNext: true,
+                input: false,
+                numeric: false,
+                refresh: false,
+                info: true
+            },
+            selectable: "single, row",
+            change: function (e) {
+                Grid_viajeSolicitado_dataitem = e !== null ? e.sender.dataItem(e.sender.select()) : null;
+            },
+            dataBound: function () {
+                var data = [];
+                var grid = this;
+                var dataSource = grid.dataSource;
+                var allData = dataSource.data();
+                var filters = dataSource.filter();
+                var query = new kendo.data.Query(allData);
+                data = query.filter(filters).data;
+                
+                $("[id='Grid_viajeSolicitado'] .k-grid-content tbody tr:not(.k-grouping-row)").dblclick(function (e) {
+                    if (!$(e.target).is(":input")) {
+                        var ds = Grid_viajeSolicitado_dataitem;
+                    }
+                });
+                
+                var data_ = $("#Grid_viajeSolicitado").data("kendoGrid").dataSource.data();
+                $("#Grid_viajeSolicitado").attr("oncontextmenu", "return false;");
+                $("[id='Grid_viajeSolicitado'] .k-grid-content tbody tr:not(.k-grouping-row)").bind("contextmenu", function (e) {
+                    for (var i = 0, len = data_.length; i < len; i++) { data_[i].SelectRow = false }
+                    $("#Grid_viajeSolicitado .k-grid-content tbody tr").removeClass("k-state-selected");
+                    $(this).addClass("k-state-selected").find("label[selectrow]").attr("selectrow", "true");
+
+                    var grid = $("#Grid_viajeSolicitado").data("kendoGrid");
+                    var d = grid.dataItem($(this));
+                    Grid_viajeSolicitado_dataitem = d;
+
+                    //console.log(Grid_viajeSolicitado_dataitem);
+
+                    $("#contextMenu").find("li").hide(); //Ocultando opciones
+                    
+                    @*
+                        1	Asignado	Cuando el encargado de transporte asigna recurso, si ha sido reasignación de viaje deberá guardar un motivo
+                        2	Cancelado	Cuando se cierra el viaje antes de llegar a plantel nuevamente, por accidente, fallos mecánicos, etc. Deberá quedar registro del motivo
+                        3	Finalizado	Cuando la unidad regresa al plantel. (Servicio)
+                        4	Iniciado	Cuando la unidad sale del plantel. (Servicio)
+                        5	Solicitado	Cuando el jefe de área registra la petición en módulo para solicitud de transporte
+                        6	Reasignado	Cuando el jefe de area otorga el viaje a otro vehiculo por motivos de algun desperfecto mecanico o alguna otra falla del vehiculo asignado al inicio
+                    *@
+                        $.get(pathRequest + "adSolicitarViaje/getEstadoId", { bitacoraid: Grid_viajeSolicitado_dataitem.bitacoraId }, function (d) {
+                            var estadoViaje_ = d.estadoid;
+                            if (rolid === 1) {
+                                if (estadoViaje_ === 5) {
+                                    // console.log("mostrar");
+                                    var limite = $(window).width() - 202; 
+                                    $("#contextMenu li").eq(3).show();
+                                    $("#contextMenu li button").eq(3).html('<i class="k-icon k-i-pencil"></i>' + "Modificar #" + Grid_viajeSolicitado_dataitem.bitacoraId);
+                                   
+                                } else {
+                                   // console.log("ocultar")
+                                    Swal.fire('AVISO!', 'El viaje seleccionado no se puede modificar porque ya no se encuentra en estado solicitado', 'warning');
+                                }
+                            }
+                            if (rolid === 2) {
+                                if (estadoViaje_ !== 2 && estadoViaje_ !== 3) { //Cancelado o finalizado
+                                    var existeOpc = false;
+                                    if (estadoViaje_ === 5) { //Si está solicitado
+                                        $("#contextMenu li").eq(0).show();
+                                        $("#contextMenu li").eq(1).show();
+
+                                        $("#contextMenu li button").eq(0).html('<i class="k-icon k-i-cancel"></i>' + "Cancelar #" + Grid_viajeSolicitado_dataitem.bitacoraId);
+                                        $("#contextMenu li button").eq(1).html('<i class="k-icon k-i-user"></i>' + "Asignar al #" + Grid_viajeSolicitado_dataitem.bitacoraId);
+                                        existeOpc = true;
+                                    }
+                                    if (estadoViaje_ === 1) { // Si está en asignado
+                                        $("#contextMenu li").eq(0).show();
+                                        $("#contextMenu li").eq(2).show();
+                                        $("#contextMenu li").eq(4).show();
+                                        
+
+                                        $("#contextMenu li button").eq(0).html('<i class="k-icon k-i-cancel"></i>' + "Cancelar #" + Grid_viajeSolicitado_dataitem.bitacoraId);
+                                        $("#contextMenu li button").eq(2).html('<i class="k-icon k-i-user"></i>' + "Reasignar al #" + Grid_viajeSolicitado_dataitem.bitacoraId);
+                                        $("#contextMenu li button").eq(4).html('<i class="k-icon k-i-pencil"></i>' + "Modificar #" + Grid_viajeSolicitado_dataitem.bitacoraId);
+                                        existeOpc = true;
+                                    }
+                                    if (estadoViaje_ === 6) { // Si está en Reasignado solo puede cancelar
+                                        $("#contextMenu li").eq(0).show();
+                                        $("#contextMenu li button").eq(0).html('<i class="k-icon k-i-cancel"></i>' + "Cancelar #" + Grid_viajeSolicitado_dataitem.bitacoraId);
+                                    }
+                                    //console.log(existeOpc);
+                                   /* if (!existeOpc) {
+                                        Swal.fire('AVISO!', 'No se pueden cambiar los datos del viaje porque está en estado Cancelado o Finalizado', 'warning');
+                                    }*/
+                                } else {
+                                    Swal.fire('AVISO!', 'No se pueden cambiar los datos del viaje porque está en estado Cancelado o Finalizado', 'warning');
+                                }
+                            }
+
+                            if (e.pageX > limite) {
+                                $("#contextMenu").show().css({ 'top': e.pageY, 'left': limite });
+                            } else {
+                                $("#contextMenu").show().css({ 'top': e.pageY, 'left': e.pageX });
+                            }
+                        });
+                   
+                   
+                    /*
+                    if (d.estadoId === 2 || d.estadoId === 3) { //Cancelado o finalizado
+                        $("#contextMenu").find("li").last().show();
+                    } else {
+                        $("#contextMenu").find("li").show();
+                    }
+
+                    if (Grid_viajeSolicitado_dataitem instanceof Object) { 
+                        
+                    }
+                    */
+
+                });
+
+                for (var i = 0; i < this.columns.length; i++) {
+                    this.autoFitColumn(i);
+                }
+            },
+            columns:
+                [
+                    {
+                        field: "bitacoraId",
+                        title: "<b>Viaje</b>",
+                        template: "\\# #: bitacoraId # ",
+                        sticky: true
+                    },
+                    {
+                        field: "estado",
+                        title: "<b>Estado</b>"
+                    },
+                    {
+                        field: "responsable",
+                        title: "<b>Responsable</b>"
+                    },
+                    {
+                        field: "fsalida",
+                        title: "<b>Salida</b>",
+                        format: "{0:yyyy-MM-dd HH:mm:ss}"
+                    },
+                    {
+                        field: "fentrada",
+                        title: "<b>Entrada</b>",
+                        format: "{0:yyyy-MM-dd HH:mm:ss}"
+                    },
+                    
+                    {
+                        field: "pernoctara",
+                        title: "<b>Pernoctará</b>",
+                        template: "#: pernoctara ? 'SI' : '' #"
+                    },
+                    
+                    {
+                        field: "supervisor",
+                        title: "<b>Supervisor</b>"
+                    },
+                    {
+                        field: "placa",
+                        title: "<b>Placa</b>"
+                    },
+                    {
+                        field: "mobileName",
+                        title: "<b>Alias</b>"
+                    },
+                    {
+                        field: "motorista",
+                        title: "<b>Motorista</b>"
+                    },
+                    {
+                        field: "kmSalida",
+                        title: "<b>Km Salida</b>"
+                    },
+                    {
+                        field: "kmEntrada",
+                        title: "<b>Km Entrada</b>"
+                    },
+                    {
+                        field: "observacion",
+                        title: "<b>Observación</b>"
+                    },
+                    {
+                        field: "evento",
+                        title: "<b>Evento</b>"
+                    }, 
+                    {
+                        field: "placaR",
+                        title: "<b>Placa Reasignado</b>"
+                    },
+                    {
+                        field: "mobileNameR",
+                        title: "<b>Alias Reasignado</b>"
+                    },
+                    {
+                        field: "motoristaNameR",
+                        title: "<b>Motorista Reasignado</b>"
+                    }
+                ],
+            detailTemplate: kendo.template($("#template_Detail_Grid_viajeSolicitado").html()),
+            detailInit: fn_gridDetalle
+        });
+        $("[id='Grid_viajeSolicitado']").data("kendoGrid").dataSource.data(datos);
+    }
+
+    create_Grid_viajeSolicitado([]);
+
+
+    //Grid Detalle **********
+    var record_Grid_viajeSolicitado_Detalle = 0;
+    function fn_gridDetalle(e) {
+        var detailRow = e.detailRow;
+        var tab = detailRow.find(".detailTabstrip").kendoTabStrip({
+            animation: {
+                open: { effects: "fadeIn" }
+            }
+        });
+
+        //Grid 1 Brigada
+        var arg =  e.data;
+        var brigada = arg.brigada.split(",").map(str => Number(str));
+        var datosBrigada = [];
+        for(var i = personalBrigada.length; i--;) {
+            loopj:
+            for (var j = brigada.length; j--;) {
+                if (personalBrigada[i]["id"] === brigada[j]) {
+                    datosBrigada.push({ id: personalBrigada[i]["id"], nombre: personalBrigada[i]["nombre"], puesto: personalBrigada[i]["puesto"] })
+                    break loopj;
+                }
+            }
+        }
+        detailRow.find(".dt_brigada").kendoGrid({
+            mobile: "phone",
+            dataSource: {
+                data: datosBrigada,
+                pageSize: 50,
+                schema: {
+                    model: {
+                        fields: {
+                            id: { type: "number" },
+                            puesto: { type: "string" },
+                            nombre: { type: "string" }
+                        }
+                    }
+                }
+            },
+            filterable: {
+                extra: false
+            },
+            filterable: false,
+            height: 150,
+            sortable: false,
+            groupable: false,
+            columnMenu: false,
+            reorderable: false,
+            resizable: false,
+            scrollable: true,
+            pageable: {
+                allPages: false,
+                pageSizes: false,
+                previousNext: false,
+                input: false,
+                numeric: false,
+                refresh: false,
+                info: false
+            },
+            selectable: "single, row",
+            change: function (e) {
+                // Grid_viajeSolicitado_dataitem = e !== null ? e.sender.dataItem(e.sender.select()) : null;
+            },
+            dataBound: function () {
+                for (var i = 0; i < this.columns.length; i++) {
+                    this.autoFitColumn(i);
+                }
+            },
+            columns:
+            [
+                {
+                    field: "nombre",
+                    title: "<b>Nombre</b>"
+                },
+                {
+                    field: "puesto",
+                    title: "<b>Puesto</b>"
+                }
+                
+            ]
+        });
+
+        //Grid 2 Viaje
+        var municipios = arg.municipios.split(",");
+        var datosMunicipios = [];
+        for (var i = 0, len = municipios.length; i < len; i++) {
+            loopj:
+            for(var j = cantonesData.length; j--;) {
+                if (cantonesData[j]["cdmc"] === municipios[i]) {
+                    datosMunicipios.push({
+                        codigo: cantonesData[j]["cdmc"],
+                        canton: cantonesData[j]["canton"],
+                        municipio: cantonesData[j]["mpio"],
+                        departamento: cantonesData[j]["dpto"]
+                    })
+                    break loopj;
+                }
+            }
+        }
+        detailRow.find(".dt_viajedetalle").kendoGrid({
+            mobile: "phone",
+            dataSource: {
+                data: datosMunicipios,
+                pageSize: 50,
+                schema: {
+                    model: {
+                        fields: {
+                            codigo: { type: "number" },
+                            canton: { type: "string" },
+                            municipio: { type: "string" },
+                            departamento: { type: "string" }
+                        }
+                    }
+                }
+            },
+            filterable: {
+                extra: false
+            },
+            filterable: false,
+            height: 150,
+            sortable: false,
+            groupable: false,
+            columnMenu: false,
+            reorderable: false,
+            resizable: false,
+            scrollable: true,
+            pageable: {
+                allPages: false,
+                pageSizes: false,
+                previousNext: false,
+                input: false,
+                numeric: false,
+                refresh: false,
+                info: false
+            },
+            /*reorderable: {
+                rows: true
+            },*/
+            selectable: "single, row",
+            change: function (e) {
+                // Grid_viajeSolicitado_dataitem = e !== null ? e.sender.dataItem(e.sender.select()) : null;
+            },
+            dataBinding: function () {
+                record_Grid_viajeSolicitado_Detalle = (this.dataSource.page() - 1) * this.dataSource.pageSize();
+            },
+            dataBound: function () {
+                for (var i = 0; i < this.columns.length; i++) {
+                    this.autoFitColumn(i);
+                }
+            },
+            columns:
+                [
+                    {
+                        title: "<b>Orden</b>",
+                        template: "#= ++record_Grid_viajeSolicitado_Detalle #"
+                    },
+                    {
+                        field: "codigo",
+                        title: "<b>Código</b>"
+                    },
+                    {
+                        field: "canton",
+                        title: "<b>Cantón</b>"
+                    },
+                    {
+                        field: "municipio",
+                        title: "<b>Municipio</b>"
+                    },
+                    {
+                        field: "departamento",
+                        title: "<b>Departamento</b>"
+                    }
+                ]
+        });
+       // setTimeout(function() {
+            //console.log(tab);
+        tab.data("kendoTabStrip").select(0)
+            //tab.select(0);
+        //}, 1000)
+    }
+
+    function clear_modalControls() {
+         pernoctarEval = false;
+        $("#ddlSupervidor").data("kendoDropDownList").value("");
+        $("#ddlPersonalBrigada").data("kendoDropDownTree").value([]);
+        $("#Grid_viajecanton").data("kendoGrid").dataSource.data([]);
+        $('#fsalida').val(moment().add("minutes", 5).format("YYYY/MM/DD HH:mm"));
+        $('#fentrada').val(moment().endOf("day").format("YYYY/MM/DD HH:mm"));
+        $("#txtObservaciones").val("");
+       
+    }
+
+    @{
+        if (rolid == 1)
+        {
+            <text>
+                function fn_openModalAgregarViaje() {
+                    $("#btn_modificar").hide();
+                    $("#btn_guardar").show();
+                    clear_modalControls();
+                    $('#modal_ingresarviaje').modal('show');
+                    setTimeout(function () {
+                        $("[id='Grid_viajecanton']").data("kendoGrid").refresh();
+                    }, 500);
+                }
+            </text>
+        }
+    }
+</script>
+
+
+@await Html.PartialAsync("~/Views/adsolicitarviaje/modalIngresarViaje.cshtml")
+@await Html.PartialAsync("~/Views/adsolicitarviaje/modalCancelarViaje.cshtml")
+@await Html.PartialAsync("~/Views/adsolicitarviaje/modalAsignarReasignar.cshtml")

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>mBlueWay</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.2/css/all.css" rel="stylesheet" />
+
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/js/bootstrap.min.js"></script>
+
+    <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDwL4llQcFETOysWDY5Ph_wKSwCUBUrSM8&libraries=geometry&callback=Function.prototype"></script>
+    <script src="https://kendo.cdn.telerik.com/2022.2.510/js/kendo.all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.13.6/underscore-min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/locale/es-mx.min.js"></script>
+
+    <script src="https://kendo.cdn.telerik.com/2022.2.510/js/jszip.min.js"></script>
+    <script src="https://kendo.cdn.telerik.com/2022.2.510/js/kendo.all.min.js"></script>
+    <script src="https://kendo.cdn.telerik.com/2022.2.510/js/messages/kendo.messages.es-ES.min.js"></script>
+    <script src="https://kendo.cdn.telerik.com/2022.2.510/js/cultures/kendo.culture.es-SV.min.js"></script>
+    <link rel="stylesheet" href="https://kendo.cdn.telerik.com/2022.2.510/styles/kendo.common.min.css" />
+    <link rel="stylesheet" href="https://kendo.cdn.telerik.com/2022.2.510/styles/kendo.default-main.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/limonte-sweetalert2/11.6.15/sweetalert2.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/limonte-sweetalert2/11.6.15/sweetalert2.min.css" />
+
+    <script src="~/js/materialdatetimepicker.js"></script>
+    <link href="~/css/materialdatetimepicker.css" rel="stylesheet" />
+
+    <script type="text/javascript">
+        kendo.culture("es-SV");
+    </script>
+    <link href="~/css/main.css" rel="stylesheet" />
+    <script type="text/javascript">
+        var pathRequest = location.pathname.length === 1 ? location.pathname : location.pathname + "/";
+
+        _.groupByMulti = function (obj, values, context) {
+            if (!values.length)
+                return obj;
+            var byFirst = _.groupBy(obj, values[0], context),
+                rest = values.slice(1);
+            for (var prop in byFirst) {
+                byFirst[prop] = _.groupByMulti(byFirst[prop], rest, context);
+            }
+            return byFirst;
+        };
+    </script>
+    @*
+        <script src="https://kendo.cdn.telerik.com/2022.2.510/js/kendo.all.min.js"></script>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+        <link href="~/css/main.css" rel="stylesheet" />
+        <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDwL4llQcFETOysWDY5Ph_wKSwCUBUrSM8&libraries=geometry"></script> 
+        <script type="text/javascript" src="https://code.jquery.com/jquery-3.6.3.min.js"></script>
+        <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.13.6/underscore-min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+        <script src="https://kendo.cdn.telerik.com/2022.2.510/js/jszip.min.js"></script>
+        <script src="https://kendo.cdn.telerik.com/2022.2.510/js/kendo.all.min.js"></script>
+        <script src="https://kendo.cdn.telerik.com/2022.2.510/js/messages/kendo.messages.es-ES.min.js"></script>
+        <script src="https://kendo.cdn.telerik.com/2022.2.510/js/cultures/kendo.culture.es-SV.min.js"></script>
+        <link rel="stylesheet" href="https://kendo.cdn.telerik.com/2022.2.510/styles/kendo.common.min.css" />
+        <link rel="stylesheet" href="https://kendo.cdn.telerik.com/2022.2.510/styles/kendo.default-main.min.css" />
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/limonte-sweetalert2/11.6.15/sweetalert2.min.js"></script>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/limonte-sweetalert2/11.6.15/sweetalert2.min.css" />
+    *@
+</head>
+<body>
+    @RenderBody()
+</body>
+</html>

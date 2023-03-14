@@ -1,0 +1,65 @@
+﻿<div id="TreeSubflotas"></div>
+<script type="text/javascript">
+    function getTreeView() {
+        var arg = {
+            userid: 4450
+        };
+        $.get("adAsignarVehiculoAViaje/ObtenerSubflotaVehiculos", arg, function (d) {
+            generateTreeView(d);
+        });
+    }
+    getTreeView();
+
+    function generateTreeView(data) {
+        $("#TreeSubflotas").kendoTreeView({
+            checkboxes: {
+                checkChildren: true,
+                //change: TreeSubflotas_Change,
+            },
+            mobile: true,
+            dataBound: TreeSubflotas_DataBound,
+            check: onCheck,
+            dataSource: data
+        });
+    }
+
+
+    function checkedNodeIds(nodes, checkedNodes) {
+        for (var i = 0; i < nodes.length; i++) {
+            if (nodes[i].checked) {
+                nodes[i].codigo.charAt(0) === "m" && checkedNodes.push(parseInt(nodes[i].codigo.substring(1)));
+            }
+
+            if (nodes[i].hasChildren) {
+                checkedNodeIds(nodes[i].children.view(), checkedNodes);
+            }
+        }
+    }
+
+    var TreeMobiles = [];
+    function onCheck() {
+        var checkedNodes = [],
+            treeView = $("#TreeSubflotas").data("kendoTreeView"),
+            message;
+
+        checkedNodeIds(treeView.dataSource.view(), checkedNodes);
+
+        if (checkedNodes.length > 0) {
+            message = "IDs of checked nodes: " + checkedNodes.join(",");
+        } else {
+            message = "No nodes checked.";
+        }
+
+        TreeMobiles = checkedNodes;
+        //  console.log(TreeMobiles);
+    }
+
+    function TreeSubflotas_DataBound() {
+        this.collapse(".k-item");
+        var lif = this;
+        setTimeout(function () {
+            lif.expand("li:first");
+        }, 200);
+    }
+
+</script>

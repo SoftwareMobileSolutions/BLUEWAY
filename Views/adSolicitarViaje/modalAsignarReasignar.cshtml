@@ -1,0 +1,149 @@
+﻿<div class="modal fade" id="modal_Asignarviaje" tabindex="-1" role="dialog" aria-labelledby="" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content shadow-ex">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTituloAsignar">Asignar Vehículo a Viaje</h5>
+            </div>
+            <div class="modal-body">
+                
+               <div class="row">
+                   <div class="col-12">
+                        <label for="categories">Listado de vehículos con motoristas:</label>
+                        <input id="mobilemotorista" />
+                   </div>
+               </div>
+               <div class="row eventos">
+                    <div class="col-12">
+                        <label for="categories">Listado de Eventos:</label>
+                        <input id="DDL_eventosBitacora" />
+                    </div>
+               </div>
+               <div class="row eventos">
+                    <div class="col-lg-12">
+                        <div class="form-group">
+                            <label for="ReasigObservaciones">Observaciones</label>
+                            <textarea class="form-control" id="ReasigObservaciones" rows="3"></textarea>
+                        </div>
+                    </div>
+               </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal" onclick="$('#modal_Asignarviaje').modal('hide');">Cerrar</button>
+                <button type="button" class="btn btn-success" id="btn_Asignar" onclick="fn_setAsignarViaje(0);">Asignar</button>
+                <button type="button" class="btn btn-success" id="btn_Resignar" onclick="fn_setAsignarViaje(1);">Reasignar</button>
+                <button type="button" class="btn btn-success" id="btn_AsigModificar" onclick="fn_setAsignarViaje(2);">Modificar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+    //Mobile Motorista
+    var DDL_mobilemotoristaData = [];
+    function fn_getMobileMotoristas() {
+        $.get(pathRequest + "adSolicitarViaje/getMobileMotoristas", {}, function (d) {
+            $("#mobilemotorista").kendoDropDownList({
+                optionLabel: "[Seleccione un vehículo/Motorista]",
+                dataTextField: "alias",
+                dataValueField: "mobileid",
+                height: 310,
+                template: '<span class="k-state-default">' +
+                             '</span><span class=\"k-state-default\"><label style=\"font-size: 14px;\"><b>#: data.alias #</b></label><span> (#: data.placa #) </span>'+
+                             '<p><span>#: data.motorista #</span></p>' +
+                          '</span>',
+                valueTemplate: '<span class="selected-value"></span><span>#: data.alias # (#: data.placa #)</span>',
+                footerTemplate: 'Total <strong>#: instance.dataSource.total() #</strong>',
+                dataSource: {
+                    data: d,
+                    serverFiltering: false
+                },
+                change: function(e) {
+                    DDL_mobilemotoristaData = e !== null ? e.sender.dataItem(e.sender.select()) : null;
+                }
+            }).data("kendoDropDownList");
+        });
+    }
+    fn_getMobileMotoristas();
+
+    //Eventos
+    var DDL_eventosBitacora_data = [];
+    function fn_getEventosBitacora() {
+        $.get(pathRequest + "adSolicitarViaje/ddl_eventos", {}, function (d) {
+            $("#DDL_eventosBitacora").kendoDropDownList({
+                optionLabel: "[Seleccione un Evento]",
+                dataTextField: "nombre",
+                dataValueField: "id",
+                height: 310,
+                /*
+                template: 
+                
+                '<span class="k-state-default">' +
+                    '</span><span class=\"k-state-default\"><label style=\"font-size: 14px;\"><b>#: data.alias #</b></label><span> (#: data.placa #) </span>' +
+                    '<p><span>#: data.motorista #</span></p>' +
+                    '</span>',
+                valueTemplate: '<span class="selected-value"></span><span>#: data.alias # (#: data.placa #)</span>',
+                footerTemplate: 'Total <strong>#: instance.dataSource.total() #</strong>',
+                */
+                dataSource: {
+                    data: d,
+                    serverFiltering: false
+                },
+                change: function (e) {
+                    DDL_eventosBitacora_data = e !== null ? e.sender.dataItem(e.sender.select()) : null;
+                }
+            }).data("kendoDropDownList");
+        });
+    }
+    fn_getEventosBitacora();
+
+
+
+    //Asignar - Reasignar
+    function fn_setAsignarViaje(op_reasignar) {
+        var d = Grid_viajeSolicitado_dataitem;
+        var d2 = DDL_mobilemotoristaData;
+        var d3 = DDL_eventosBitacora_data;
+        var arg = {
+            bitacoraId: d.bitacoraId,
+            mobileid: d2.mobileid,
+            motoristaid: d2.motoristaid,
+            op_reasignar: op_reasignar,
+            eventoid: op_reasignar === 1 ? d3.id : 0,
+            observacion: $.trim($("#ReasigObservaciones").val())
+        };
+
+        if ((typeof arg.eventoid === "undefined" || arg.eventoid === '') && op_reasignar === 1) {
+            Swal.fire('AVISO!', "Debe seleccionar un evento", 'warning');
+            return false;
+        }
+
+        if (arg.observacion === "" && op_reasignar === 1) {
+            Swal.fire('AVISO!', "Debe agregar un comentario", 'warning');
+            return false;
+        }
+
+        if (op_reasignar === 1) {
+            $("#btn_Resignar").attr("onclick", "");
+        } else if (op_reasignar === 0) {
+            $("#btn_Asignar").attr("onclick", "");
+        } else {
+            $("#btn_AsigModificar").attr("onclick", "");
+        }
+
+        $.post(pathRequest + "adSolicitarViaje/setAsignarReasignar", arg, function (d) {
+            Swal.fire('AVISO!', d.msj, d.op === 1 ? 'success' : 'warning');
+            if (d.op === 1) {
+                $("#modal_Asignarviaje").modal("hide");
+            }
+        }).always(function() {
+            get_Grid_viajeSolicitado();
+            if (op_reasignar === 1) {
+                $("#btn_Resignar").attr("onclick", "fn_setAsignarViaje(1);");
+            } else if (op_reasignar === 0) {
+                $("#btn_Asignar").attr("onclick", "fn_setAsignarViaje(0);");
+            } else {
+                $("#btn_AsigModificar").attr("onclick", "fn_setAsignarViaje(2);");
+            }
+        });
+    }
+</script>

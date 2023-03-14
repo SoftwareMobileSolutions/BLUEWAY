@@ -1,0 +1,274 @@
+﻿
+@{
+    Layout = null;
+}
+
+<script type="text/javascript">
+    @*
+        /* global define,module,require,google */
+
+(function (root, factory) {
+    'use strict';
+    if (typeof define === 'function' && define.amd) {
+        // AMD. Register as an anonymous module.
+        define(['jquery', 'marker-animate'], factory.bind(null, root));
+    } else if (typeof module !== "undefined" && module !== null && module.exports != null) { // jshint ignore:line
+        // Node module.
+        module.exports = factory(root, require('jquery'), require('marker-animate'));
+    } else {
+        // Browser globals
+        root.SlidingMarker = factory(root, root.jQuery);
+    }
+}(this,
+    function (root, $) {
+        'use strict';
+
+        //Let jQuery be soft dependency
+        $ = $ || {};
+        $.extend = $.extend || function extend(obj) {
+            //Taken (and modified) from here: http://stackoverflow.com/a/14604815/1691132
+            Array.prototype.slice.call(arguments, 1).forEach(function (source) {
+                if (source) {
+                    for (var prop in source) {
+                        if (source[prop] && source[prop].constructor === Object) {
+                            if (!obj[prop] || obj[prop].constructor === Object) {
+                                obj[prop] = obj[prop] || {};
+                                extend(obj[prop], source[prop]);
+                            } else {
+                                obj[prop] = source[prop];
+                            }
+                        } else {
+                            obj[prop] = source[prop];
+                        }
+                    }
+                }
+            });
+            return obj;
+        };
+
+        var GoogleMarker = google.maps.Marker; //Store original in case it will be replaced in initializeGlobally().
+
+        var animateTo,
+            markerAnimate_AnimateTo_Wrapper = function(destPosition, easing, duration) { //default implementation based on markerAnimate
+                if (destPosition === null || destPosition === undefined) {
+                    //as markerAnimate provides no means to stop animation, do it manually, even though it leaks markerAnimate implementation.
+                    if (window.cancelAnimationFrame) {
+                        window.cancelAnimationFrame(this.AT_animationHandler);
+                    } else {
+                        clearTimeout(this.AT_animationHandler);
+                    }
+                    return;
+                }
+                google.maps.Marker.prototype.animateTo.apply(this, arguments);
+            };
+
+        //default options
+        var defaultOptions = {
+            easing: "easeInOutQuint",
+            duration: 1000,
+            animateFunctionAdapter: function (marker, destPosition, easing, duration) {
+                if (!animateTo) {
+                    if (!google.maps.Marker.prototype.animateTo) {
+                        throw new Error("Please either reference markerAnimate.js, or provide an alternative animateFunctionAdapter");
+                    }
+                    animateTo = markerAnimate_AnimateTo_Wrapper;
+                }
+                animateTo.call(marker, destPosition, {
+                    easing: easing,
+                    duration: duration,
+                    complete: function () {
+                    }
+                });
+            }
+        };
+
+        var inherits = function (childCtor, parentCtor) {
+            /* @constructor */
+            function TempCtor() {}
+
+            TempCtor.prototype = parentCtor.prototype;
+            childCtor.superClass_ = parentCtor.prototype;
+            childCtor.prototype = new TempCtor();
+            /* @override */
+            childCtor.prototype.constructor = childCtor;
+        };
+
+        var decorates = function (childCtor, parentCtor) {
+            inherits(childCtor, parentCtor);
+
+            var parentPrototype = parentCtor.prototype;
+
+            //TODO: google.maps.MVCObject.prototype.set if object instanceof GoogleMarker
+
+            $.extend(childCtor.prototype, {
+                _instance: null, //override it in constructor
+
+                originalSet: function () {
+                    return parentPrototype.set.apply(this, arguments);
+                },
+
+                //from MVCObject
+                set: function (key, value) {
+                    var that = this;
+
+                    that.originalSet.apply(that, arguments);
+
+                    if (key === "position" && that instanceof SlidingMarker) {
+                        that._setInstancePositionAnimated(value);
+                    } else {
+                        that.originalSet.apply(that._instance, arguments);
+                    }
+                },
+
+                _setInstancePositionAnimated: function (position) {
+                    var that = this;
+
+                    if (that._constructing) { //pass by
+                        return;
+                    }
+
+                    if (!position || !that._instance.getPosition()) { //If position is set for a first time, no animation should be applied
+                        if (that._instance.getPosition() !== position) {
+                            that._instance.setPosition(position);
+                        }
+                        return;
+                    }
+
+                    //apply animation function
+                    //this will cause many animationposition_changed events
+                    that.get("animateFunctionAdapter").call(null, that._instance, position, that.get("easing"), that.get("duration"));
+                },
+
+                //setValues() will call set(), no need to override
+
+                originalAddListener: function () {
+                    return parentPrototype.addListener.apply(this, arguments);
+                },
+
+                //from MVCObject
+                addListener: function (eventName, handler) {
+                    var target = (eventName === "map_changed") ? this._instance : getEventTarget.call(this, eventName);
+                    return this.originalAddListener.apply(target, arguments);
+                },
+
+                map_changed: function () {
+                    //Should be empty
+                    //Prevents this marker from appearing on map. Only this._instance marker will appear.
+                },
+
+                //This will be called by binding created with marker.bindTo() method, instead of call to set("position").
+                position_changed: function () {
+                    if (!this._suppress_animation) {
+                        this._setInstancePositionAnimated(this.getPosition());
+                    } else {
+                        delete this._suppress_animation;
+                    }
+                }
+
+            });
+
+        };
+
+        //call it on SlidingMarker
+        var getEventTarget = function (eventName) {
+            //redirect _changed events to this, other events to _instance
+            if (eventName.endsWith("_changed")) { //all _changed redirect to this
+                return this;
+            }
+            return this._instance;
+        };
+
+        var originalAddListener = google.maps.event.addListener;
+        google.maps.event.addListener = function (instance, eventName, handler) {
+            //Redirect listener to target
+            if (instance instanceof SlidingMarker) {
+                var target = (eventName === "map_changed") ? instance._instance : getEventTarget.call(instance, eventName);
+                return originalAddListener.call(this, target, eventName, handler);
+            }
+
+            return originalAddListener.apply(this, arguments);
+        };
+
+        var originalTrigger = google.maps.event.trigger;
+        google.maps.event.trigger = function (instance, eventName) {
+            //Replace instance parameter to target
+            if (instance instanceof SlidingMarker) {
+                var target = (eventName === "map_changed") ? instance : getEventTarget.call(instance, eventName),
+                    newArgs = [target].concat(Array.prototype.slice.call(arguments, 1)); //replaces instance parameter with target
+
+                return originalTrigger.apply(this, newArgs);
+            }
+
+            return originalTrigger.apply(this, arguments);
+        };
+
+        //just string helper
+        String.prototype.endsWith = String.prototype.endsWith || function(suffix) {
+            return this.indexOf(suffix, this.length - suffix.length) !== -1;
+        };
+
+        //constructor
+        var SlidingMarker = function (opt_options) {
+
+            opt_options = $.extend({}, defaultOptions, opt_options);
+
+            this._instance = new GoogleMarker(opt_options);
+
+            this.animationPosition = null;
+
+            this._constructing = true;
+            // Call the parent constructor.
+            GoogleMarker.call(this, opt_options);
+            delete this._constructing;
+
+            this.bindTo("animationPosition", this._instance, "position");
+            this.bindTo("anchorPoint", this._instance, "anchorPoint"); //This makes InfoWindow.open(map, marker) work.
+            this.bindTo("internalPosition", this._instance, "internalPosition"); //This makes InfoWindow.open(map, marker) work.
+
+        };
+
+        decorates(SlidingMarker, GoogleMarker);
+
+        //Overrides
+        $.extend(SlidingMarker.prototype, {
+
+            getAnimationPosition: function () {
+                return this.get("animationPosition");
+            },
+
+            //Changes marker position immediately
+            setPositionNotAnimated: function (position) {
+                this._suppress_animation = true; //will be unset by position_changed handler
+                this.get("animateFunctionAdapter").call(null, this._instance, null); //stop current animation
+                this.originalSet("position", position);
+                this._instance.setPosition(position);
+            },
+
+            setDuration: function (value) {
+                this.set("duration", value);
+            },
+
+            getDuration: function () {
+                return this.get("duration");
+            },
+
+            setEasing: function (value) {
+                this.set("easing", value);
+            },
+
+            getEasing: function () {
+                return this.get("easing");
+            }
+
+        });
+
+        SlidingMarker.initializeGlobally = function () {
+            google.maps.Marker = SlidingMarker;
+        };
+
+        return SlidingMarker;
+
+    }));
+    *@
+    !function(t,n){"use strict";"function"==typeof define&&define.amd?define(["jquery","marker-animate"],n.bind(null,t)):"undefined"!=typeof module&&null!==module&&null!=module.exports?module.exports=n(t,require("jquery"),require("marker-animate")):t.SlidingMarker=n(t,t.jQuery)}(this,function(t,n){"use strict";n=n||{},n.extend=n.extend||function d(t){return Array.prototype.slice.call(arguments,1).forEach(function(n){if(n)for(var i in n)n[i]&&n[i].constructor===Object?t[i]&&t[i].constructor!==Object?t[i]=n[i]:(t[i]=t[i]||{},d(t[i],n[i])):t[i]=n[i]}),t};var i,e=google.maps.Marker,o=function(t){return null===t||void 0===t?void(window.cancelAnimationFrame?window.cancelAnimationFrame(this.AT_animationHandler):clearTimeout(this.AT_animationHandler)):void google.maps.Marker.prototype.animateTo.apply(this,arguments)},a={easing:"easeInOutQuint",duration:1e3,animateFunctionAdapter:function(t,n,e,a){if(!i){if(!google.maps.Marker.prototype.animateTo)throw new Error("Please either reference markerAnimate.js, or provide an alternative animateFunctionAdapter");i=o}i.call(t,n,{easing:e,duration:a,complete:function(){}})}},r=function(t,n){function i(){}i.prototype=n.prototype,t.superClass_=n.prototype,t.prototype=new i,t.prototype.constructor=t},s=function(t,i){r(t,i);var e=i.prototype;n.extend(t.prototype,{_instance:null,originalSet:function(){return e.set.apply(this,arguments)},set:function(t,n){var i=this;i.originalSet.apply(i,arguments),"position"===t&&i instanceof p?i._setInstancePositionAnimated(n):i.originalSet.apply(i._instance,arguments)},_setInstancePositionAnimated:function(t){var n=this;if(!n._constructing)return t&&n._instance.getPosition()?void n.get("animateFunctionAdapter").call(null,n._instance,t,n.get("easing"),n.get("duration")):void(n._instance.getPosition()!==t&&n._instance.setPosition(t))},originalAddListener:function(){return e.addListener.apply(this,arguments)},addListener:function(t){var n="map_changed"===t?this._instance:c.call(this,t);return this.originalAddListener.apply(n,arguments)},map_changed:function(){},position_changed:function(){this._suppress_animation?delete this._suppress_animation:this._setInstancePositionAnimated(this.getPosition())}})},c=function(t){return t.endsWith("_changed")?this:this._instance},u=google.maps.event.addListener;google.maps.event.addListener=function(t,n,i){if(t instanceof p){var e="map_changed"===n?t._instance:c.call(t,n);return u.call(this,e,n,i)}return u.apply(this,arguments)};var l=google.maps.event.trigger;google.maps.event.trigger=function(t,n){if(t instanceof p){var i="map_changed"===n?t:c.call(t,n),e=[i].concat(Array.prototype.slice.call(arguments,1));return l.apply(this,e)}return l.apply(this,arguments)},String.prototype.endsWith=String.prototype.endsWith||function(t){return-1!==this.indexOf(t,this.length-t.length)};var p=function(t){t=n.extend({},a,t),this._instance=new e(t),this.animationPosition=null,this._constructing=!0,e.call(this,t),delete this._constructing,this.bindTo("animationPosition",this._instance,"position"),this.bindTo("anchorPoint",this._instance,"anchorPoint"),this.bindTo("internalPosition",this._instance,"internalPosition")};return s(p,e),n.extend(p.prototype,{getAnimationPosition:function(){return this.get("animationPosition")},setPositionNotAnimated:function(t){this._suppress_animation=!0,this.get("animateFunctionAdapter").call(null,this._instance,null),this.originalSet("position",t),this._instance.setPosition(t)},setDuration:function(t){this.set("duration",t)},getDuration:function(){return this.get("duration")},setEasing:function(t){this.set("easing",t)},getEasing:function(){return this.get("easing")}}),p.initializeGlobally=function(){google.maps.Marker=p},p});
+</script>

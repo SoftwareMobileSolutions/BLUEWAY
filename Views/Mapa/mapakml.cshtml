@@ -1,0 +1,133 @@
+﻿
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>mapakml</title>
+    <style type="text/css">
+        html, body{
+            width: 100%;
+            height: 100%;
+            padding: 0px;
+            margin: 0px;
+        }
+        #gmaps {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+    <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDwL4llQcFETOysWDY5Ph_wKSwCUBUrSM8"></script>
+    <script type="text/javascript" src="~/js/jquery-3.3.1.min.js"></script>
+</head>
+<body>
+    @*
+    @await Html.PartialAsync("~/Views/Mapa/Spiderfier/Terikon.cshtml")
+    @await Html.PartialAsync("~/Views/Mapa/Spiderfier/MarkerAnimate.cshtml")
+    @await Html.PartialAsync("~/Views/Mapa/Spiderfier/SlidingMarker.cshtml")
+    @await Html.PartialAsync("~/Views/Mapa/Spiderfier/MarkerWithGhost.cshtml")
+
+    @await Html.PartialAsync("~/Views/Mapa/geoxml3/polys/geoxml3.cshtml")
+    @await Html.PartialAsync("~/Views/Mapa/geoxml3/ProjectedOverlay.cshtml")*@
+
+    <input type="button" value="Descargar KML" onclick="ExportarJSONToKML();" />
+    <div id="gmaps"></div>
+    <script type="text/javascript">
+        //MAPA
+        var idmap = "gmaps";
+        var map = null;
+        var center = { lat: 13.698046622, lng: -89.209458191 };
+        var mk = [];
+        function fn_initialize() {
+            map = new google.maps.Map(document.getElementById(idmap), {
+                zoom: 17,
+                panControl: false,
+                scaleControl: false,
+                mapTypeControl: false,
+                streetViewControl: false,
+                mapTypeId: google.maps.MapTypeId.ROADMAP,
+                fullscreenControl: false,
+                mapTypeControlOptions: {
+                    mapTypeIds: [google.maps.MapTypeId.ROADMAP,
+                    google.maps.MapTypeId.HYBRID,
+                    google.maps.MapTypeId.SATELLITE,
+                    google.maps.MapTypeId.TERRAIN],
+                    style: google.maps.MapTypeControlStyle.HORIZONTAL_BAR
+                },
+                zoomControl: false,
+                zoomControlOptions: { style: google.maps.ZoomControlStyle.SMALL },
+                gestureHandling: 'greedy',
+                center: center
+            });
+            createmk();
+        }
+        fn_initialize();
+
+      
+        function createmk() {
+            mk = new google.maps.Marker({
+                position: center,
+                map,
+                title: "Prueba",
+            });
+        }
+
+        //EXPORTAR KML
+        function ExportarJSONToKML() {
+            var kml =
+                (function () {
+                  
+                    var strResultado = "";
+                    strResultado +=
+                        '<?xml version="1.0" encoding="UTF-8"?>\n' +
+                        '<kml xmlns="http://www.opengis.net/kml/2.2">\n' +
+                        '<Document>\n' +
+                        '<name>' + "Nombre titulo" + '</name>\n' +
+                        '<open>1</open>\n';
+                        strResultado += '<Placemark>\n';
+                        strResultado += '<name>' + "Evento" + '</name>\n';
+                        strResultado += '<description>' +
+                            '<![CDATA[<div style="width:350px"><table border="1" width="100%">' +
+                            '<tr>' +
+                            '<td style="font-family: verdana;" bgcolor="#eeeeee">Evento</td><td style="font-family: verdana;">' + "Evento nombre" + '</td>' +
+                            '</tr>' +
+                            '</table></div>]]>' +
+                            '</description>\n' +
+                            '<Style>\n' +
+                            '<IconStyle>\n' +
+                            '<scale>1.5</scale>\n' +
+                            '<Icon>\n' +
+                            '<href>http://www.kontrol-gps.com/FleetManager/imagenes/mapIcons/' + "" + '</href>\n' +
+                            '</Icon>\n' +
+                            '</IconStyle>\n' +
+                            '</Style>\n' +
+                            '<Point>\n' +
+                        '<coordinates>' + mk.getPosition().lng() + ',' + mk.getPosition().lat() + ',0' + '</coordinates>\n' +
+                            '</Point>\n' +
+                            '</Placemark>\n' +
+                            '</Document>\n' +
+                        '</kml>';
+                    return strResultado;
+                }).call(this);
+            fn_DownloadKML("archivo_prueba" + ".kml", "data:attachment/text", kml);
+        }
+
+        function fn_DownloadKML(name, type, data) {
+            if (data !== null && navigator.msSaveBlob)
+                return navigator.msSaveBlob(new Blob([data], { type: type }), name);
+            var a = $("<a style='display: none;'/>");
+            var url = window.URL.createObjectURL(new Blob([data], { type: type }));
+            a.attr("href", url);
+            a.attr("download", name);
+            $("body").append(a);
+            a[0].click();
+            window.URL.revokeObjectURL(url);
+            a.remove();
+        }
+    </script>
+</body>
+</html>
